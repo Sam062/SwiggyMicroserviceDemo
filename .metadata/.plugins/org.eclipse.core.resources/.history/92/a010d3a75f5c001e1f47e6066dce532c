@@ -1,0 +1,21 @@
+server:
+  port: 8889
+eureka:
+  client:
+    service-url:
+      defaultZone: ${DISCOVERY_URL:http://localhost:8888}/eureka/
+spring:
+  application:
+    name: API-GATEWAY
+  cloud:
+    gateway:
+      routes:
+        - id: swiggy-service
+          uri: lb://SWIGGY-SERVICE
+          predicates:
+          - path= /swiggy/**
+          
+        - id: restaurant-service
+          uri: lb://RESTAURANT-SERVICE
+          predicates:
+          - path= /rest/**

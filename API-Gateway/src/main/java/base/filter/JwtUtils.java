@@ -1,0 +1,79 @@
+package base.filter;
+
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
+
+@Component
+public class JwtUtils {
+	private static final Logger LOGGER = LoggerFactory.getLogger(JwtUtils.class);
+
+	private String secret = "secret";
+	private String issuer = "issuer";
+
+	private Claims getClaims(String token) {
+		return Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
+	}
+
+	public String getUsernameFromToken(String token) {
+		try {
+			if (token != null && !token.isEmpty() && isValidToken(token)) {
+				return getClaims(token).getSubject();
+			} else
+				return null;
+		} catch (ExpiredJwtException e) {
+			LOGGER.error("ERROR:ExpiredJwtException Getting email from TOKEN, {} ", e.getMessage());
+//			throw new TokenExpiredException(e.getMessage());
+			return null;
+		} catch (Exception e) {
+			LOGGER.error("ERROR:Exception Getting email from TOKEN, {}", e.getMessage());
+			return null;
+		}
+	}
+
+	public boolean isValidToken(String token) {
+		try {
+			Claims claims = getClaims(token);
+			// extDate > CurrDate
+			return (claims != null && claims.getExpiration().after(new Date(System.currentTimeMillis())));
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	public boolean validateToken(String token) {
+		try {
+			return isValidToken(token);
+		} catch (SignatureException e) {
+			LOGGER.error("Invalid signature!");
+			return false;
+		} catch (MalformedJwtException e) {
+			LOGGER.error("token malformed!");
+			return false;
+		} catch (ExpiredJwtException e) {
+			LOGGER.error("Token Expired!");
+			throw new RuntimeException("Token Expired. Please login again.");
+		} catch (UnsupportedJwtException e) {
+			LOGGER.error("token unsupported!");
+			return false;
+		} catch (IllegalArgumentException e) {
+			LOGGER.error("Claims String is empty!");
+			return false;
+		} catch (Exception e) {
+			LOGGER.error("Exception!");
+			return false;
+		}
+	}
+
+}

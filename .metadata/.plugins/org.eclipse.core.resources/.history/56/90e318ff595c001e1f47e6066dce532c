@@ -1,0 +1,4 @@
+server.port=9695
+
+
+spring.application.name=SWIGGY-SERVICE

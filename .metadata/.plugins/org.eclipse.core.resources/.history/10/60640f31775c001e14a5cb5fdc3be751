@@ -1,0 +1,53 @@
+package base.filter;
+
+import javax.management.RuntimeErrorException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> {
+	@Autowired
+	private RouteValidater validater;
+	
+	@Autowired
+	private JwtUtils jwtUtils;
+
+	public AuthFilter() {
+		super(Config.class);
+	}
+
+	public static class Config {
+
+	}
+
+	@Override
+	public GatewayFilter apply(Config config) {
+		return ((exchange, chain) -> {
+
+			if(validater.isSecured.test(exchange.getRequest())) {
+				if(!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+					throw new RuntimeException("Missing authorization header");
+				}
+				String token = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
+				if(token!=null && token.startsWith("Bearer ")) {
+					token=token.substring(7);
+				}
+				
+				try {
+					//Either use fiegn client or validate using JWT here only
+					
+					boolean isTokenValid = jwtUtils.validateToken(token);
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return chain.filter(exchange);
+		});
+	}
+}
